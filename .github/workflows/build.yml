@@ -32,5 +32,3 @@ jobs:
           POSTGRES_HOST: postgres
           POSTGRES_PASS: password
           POSTGRES_USER: postgres
-      - name: Publish
-        run: yarn publish

@@ -57,9 +57,9 @@ test.after(async () => {
 
 test("postgres > works for a single query", async (t) => {
   const toAdd = randomInt(10);
-  const span = tracer.startSpan("test span");
+  const rootSpan = tracer.startSpan("test span");
   const result = await context.with(
-    trace.setSpan(context.active(), span),
+    trace.setSpan(context.active(), rootSpan),
     async () => {
       const [result] = await connection`
     SELECT 1 + ${toAdd} as sum
@@ -67,10 +67,10 @@ test("postgres > works for a single query", async (t) => {
       return result;
     }
   );
+  rootSpan.end();
 
   t.is(result.sum, 1 + toAdd);
 
-  span.end();
   const spans = memoryExporter.getFinishedSpans();
   const postgresSpans = spans
     .filter(
@@ -79,6 +79,16 @@ test("postgres > works for a single query", async (t) => {
         PostgresInstrumentation.LIBRARY_NAME
     )
     .map((span) => ({ name: span.name, parentSpanId: span.parentSpanId }));
-
-  t.snapshot(postgresSpans);
+  
+    t.is(postgresSpans.length, 4);
+    t.truthy(
+      postgresSpans.every(
+        (span) => span.parentSpanId === rootSpan.spanContext().spanId
+      )
+    );
+    t.truthy(
+      postgresSpans.every(
+        (span) => span.name === "postgres.handle"
+      )
+    );
 });
