@@ -1,0 +1,36 @@
+name: build
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    container: node:16.10-buster
+    services:
+      postgres:
+        image: postgres
+        env:
+          POSTGRES_PASSWORD: password
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+      - name: Deps
+        run: yarn install
+      - name: Build
+        run: yarn build
+      - name: Test
+        run: yarn test
+        env:
+          POSTGRES_HOST: postgres
+          POSTGRES_PASS: password
+          POSTGRES_USER: postgres
+      - name: Publish
+        run: yarn publish

@@ -31,10 +31,10 @@ test.beforeEach(() => {
   instrumentation.enable();
   const postgres = require("postgres");
   connection = postgres({
-    host: "localhost",
+    host: process.env.POSTGRES_HOST ?? "localhost",
     port: 5432,
-    password: "password",
-    username: "postgres",
+    password: process.env.POSTGRES_PASS ?? "password",
+    username: process.env.POSTGRES_USER ?? "postgres",
   });
 });
 
