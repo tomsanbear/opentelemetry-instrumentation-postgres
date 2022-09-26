@@ -10,7 +10,7 @@ import {
   SemanticAttributes,
 } from "@opentelemetry/semantic-conventions";
 import { PostgresInstrumentationConfig } from "./types";
-import { context, Span, trace, SpanKind } from "@opentelemetry/api";
+import { context, trace, SpanKind } from "@opentelemetry/api";
 
 export class PostgresInstrumentation extends InstrumentationBase<
   typeof postgres
