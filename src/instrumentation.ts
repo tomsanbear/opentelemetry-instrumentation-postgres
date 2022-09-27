@@ -40,38 +40,6 @@ export class PostgresInstrumentation extends InstrumentationBase<
     | InstrumentationModuleDefinition<unknown>[] {
     const self = this;
     this._diag.info(`init ${PostgresInstrumentation.COMPONENT}`);
-    const connection = new InstrumentationNodeModuleFile<any>(
-      "postgres/cjs/src/connection.js",
-      ["3.2.*"],
-      (moduleExports, moduleVersion) => {
-        console.log(moduleExports);
-        this._diag.debug(
-          `patching connection.js for ${PostgresInstrumentation.COMPONENT}@${moduleVersion}`
-        );
-        return moduleExports;
-      },
-      (moduleExports, moduleVersion) => {
-        this._diag.debug(
-          `removing patch on connection.js for ${PostgresInstrumentation.COMPONENT}@${moduleVersion}`
-        );
-      }
-    );
-    const result = new InstrumentationNodeModuleFile<any>(
-      "postgres/cjs/src/result.js",
-      ["3.2.*"],
-      (moduleExports, moduleVersion) => {
-        this._diag.debug(
-          `patching result.js for ${PostgresInstrumentation.COMPONENT}@${moduleVersion}`
-        );
-
-        return moduleExports;
-      },
-      (moduleExports, moduleVersion) => {
-        this._diag.debug(
-          `removing patch on result.js for ${PostgresInstrumentation.COMPONENT}@${moduleVersion}`
-        );
-      }
-    );
     const query = new InstrumentationNodeModuleFile<any>(
       "postgres/cjs/src/query.js",
       ["3.2.*"],
@@ -122,7 +90,7 @@ export class PostgresInstrumentation extends InstrumentationBase<
         ["3.2.*"],
         undefined,
         undefined,
-        [query, connection, result]
+        [query]
       ),
     ];
   }
