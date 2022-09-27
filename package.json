@@ -62,6 +62,7 @@
   "dependencies": {
     "@opentelemetry/instrumentation": "^0.31.0",
     "@opentelemetry/semantic-conventions": "^1.0.0",
+    "is-promise": "^4.0.0",
     "postgres": "3.2.4"
   },
   "homepage": "https://github.com/tomsanbear/opentelemetry-instrumentation-postgres",

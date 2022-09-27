@@ -12,7 +12,9 @@ import {
 import { PostgresInstrumentationConfig, _Query } from "./types";
 import { context, trace, SpanKind } from "@opentelemetry/api";
 
-export class PostgresInstrumentation extends InstrumentationBase<typeof postgres> {
+export class PostgresInstrumentation extends InstrumentationBase<
+  typeof postgres
+> {
   static readonly LIBRARY_NAME = "opentelemetry-instrumentation-postgres";
   static readonly COMPONENT = "postgres";
 
@@ -38,9 +40,41 @@ export class PostgresInstrumentation extends InstrumentationBase<typeof postgres
     | InstrumentationModuleDefinition<unknown>[] {
     const self = this;
     this._diag.info(`init ${PostgresInstrumentation.COMPONENT}`);
+    const connection = new InstrumentationNodeModuleFile<any>(
+      "postgres/cjs/src/connection.js",
+      ["3.2.*"],
+      (moduleExports, moduleVersion) => {
+        console.log(moduleExports);
+        this._diag.debug(
+          `patching connection.js for ${PostgresInstrumentation.COMPONENT}@${moduleVersion}`
+        );
+        return moduleExports;
+      },
+      (moduleExports, moduleVersion) => {
+        this._diag.debug(
+          `removing patch on connection.js for ${PostgresInstrumentation.COMPONENT}@${moduleVersion}`
+        );
+      }
+    );
+    const result = new InstrumentationNodeModuleFile<any>(
+      "postgres/cjs/src/result.js",
+      ["3.2.*"],
+      (moduleExports, moduleVersion) => {
+        this._diag.debug(
+          `patching result.js for ${PostgresInstrumentation.COMPONENT}@${moduleVersion}`
+        );
+
+        return moduleExports;
+      },
+      (moduleExports, moduleVersion) => {
+        this._diag.debug(
+          `removing patch on result.js for ${PostgresInstrumentation.COMPONENT}@${moduleVersion}`
+        );
+      }
+    );
     const query = new InstrumentationNodeModuleFile<any>(
       "postgres/cjs/src/query.js",
-      ["*"],
+      ["3.2.*"],
       (moduleExports, moduleVersion) => {
         this._diag.debug(
           `patching query.js for ${PostgresInstrumentation.COMPONENT}@${moduleVersion}`
@@ -50,7 +84,7 @@ export class PostgresInstrumentation extends InstrumentationBase<typeof postgres
           "handle",
           // eslint-disable-next-line @typescript-eslint/ban-types
           (original: Function) => {
-            return async function exec(this: unknown, ...args: unknown[]) {
+            return async function exec(this: any, ...args: unknown[]) {
               const parentSpan = trace.getSpan(context.active());
               if (parentSpan === undefined) {
                 return await original.apply(this, args);
@@ -62,7 +96,10 @@ export class PostgresInstrumentation extends InstrumentationBase<typeof postgres
                   ...PostgresInstrumentation.COMMON_ATTRIBUTES,
                 },
               });
+              // Query is executed here
               const response = await original.apply(this, args);
+              const query = this.strings.join("?");
+              span.setAttribute(SemanticAttributes.DB_STATEMENT, query);
               span.end();
               return response;
             };
@@ -82,10 +119,10 @@ export class PostgresInstrumentation extends InstrumentationBase<typeof postgres
     return [
       new InstrumentationNodeModuleDefinition<unknown>(
         PostgresInstrumentation.COMPONENT,
-        ["*"],
+        ["3.2.*"],
         undefined,
         undefined,
-        [query]
+        [query, connection, result]
       ),
     ];
   }

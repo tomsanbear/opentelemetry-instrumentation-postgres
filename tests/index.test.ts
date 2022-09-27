@@ -10,6 +10,7 @@ import { randomInt } from "crypto";
 import type * as postgresType from "postgres";
 import PostgresInstrumentation from "../src";
 import { registerInstrumentationTesting } from "@opentelemetry/contrib-test-utils";
+import { SemanticAttributes } from "@opentelemetry/semantic-conventions";
 
 const provider = new BasicTracerProvider();
 const tracer = provider.getTracer("default");
@@ -20,7 +21,7 @@ let contextManager: AsyncHooksContextManager;
 let connection: postgresType.Sql<{}>;
 let instrumentation: PostgresInstrumentation;
 
-test.beforeEach(() => {
+test.beforeEach(async () => {
   contextManager = new AsyncHooksContextManager();
   context.setGlobalContextManager(contextManager.enable());
   instrumentation = registerInstrumentationTesting(
@@ -36,6 +37,8 @@ test.beforeEach(() => {
     password: process.env.POSTGRES_PASS ?? "password",
     username: process.env.POSTGRES_USER ?? "postgres",
   });
+  // the library pings for types on first connect
+  await connection`SELECT 1`;
 });
 
 test.afterEach(async () => {
@@ -62,7 +65,9 @@ test("postgres > works for a single query", async (t) => {
     trace.setSpan(context.active(), rootSpan),
     async () => {
       const [result] = await connection`
-    SELECT 1 + ${toAdd} as sum
+    SELECT 1 + ${toAdd} as sum, pg_sleep(1)
+    WHERE 2 = ${2}
+    AND 3 in ${connection([1, 2, 3])}
     `;
       return result;
     }
@@ -72,23 +77,18 @@ test("postgres > works for a single query", async (t) => {
   t.is(result.sum, 1 + toAdd);
 
   const spans = memoryExporter.getFinishedSpans();
-  const postgresSpans = spans
-    .filter(
-      (span) =>
-        span.instrumentationLibrary.name ===
-        PostgresInstrumentation.LIBRARY_NAME
-    )
-    .map((span) => ({ name: span.name, parentSpanId: span.parentSpanId }));
-  
-    t.is(postgresSpans.length, 4);
-    t.truthy(
-      postgresSpans.every(
-        (span) => span.parentSpanId === rootSpan.spanContext().spanId
-      )
-    );
-    t.truthy(
-      postgresSpans.every(
-        (span) => span.name === "postgres.handle"
-      )
-    );
+  const postgresSpans = spans.filter(
+    (span) =>
+      span.instrumentationLibrary.name === PostgresInstrumentation.LIBRARY_NAME
+  );
+  t.is(postgresSpans[0].name, "postgres.handle");
+  t.is(postgresSpans[0].attributes[SemanticAttributes.DB_SYSTEM], "postgresql");
+  t.is(
+    postgresSpans[0].attributes[SemanticAttributes.DB_STATEMENT],
+    `
+    SELECT 1 + ? as sum, pg_sleep(1)
+    WHERE 2 = ?
+    AND 3 in ?
+    `
+  );
 });
