@@ -1,6 +1,6 @@
 {
   "name": "opentelemetry-instrumentation-postgres",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "description": "OpenTelemetry postgres automatic instrumentation package.",
   "main": "dist/src/index.js",
   "types": "dist/src/index.d.ts",
