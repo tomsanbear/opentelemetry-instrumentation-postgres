@@ -2,9 +2,12 @@
   "name": "opentelemetry-instrumentation-postgres",
   "version": "0.0.2",
   "description": "OpenTelemetry postgres automatic instrumentation package.",
-  "main": "dist/src/index.js",
-  "types": "dist/src/index.d.ts",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
   "source": "src/index.ts",
+  "files": [
+    "dist/**"
+  ],
   "repository": "github.com/tomsanbear/opentelemetry-instrumentation-postgres",
   "scripts": {
     "clean": "rimraf dist/*",
@@ -26,14 +29,6 @@
   "engines": {
     "node": ">=8.12.0"
   },
-  "files": [
-    "dist/src/**/*.js",
-    "dist/src/**/*.js.map",
-    "dist/src/**/*.d.ts",
-    "doc",
-    "LICENSE",
-    "README.md"
-  ],
   "publishConfig": {
     "access": "public"
   },
