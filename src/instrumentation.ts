@@ -60,10 +60,10 @@ export class PostgresInstrumentation extends InstrumentationBase<
       "postgres/cjs/src/result.js",
       ["3.2.*"],
       (moduleExports, moduleVersion) => {
-        console.log(moduleExports);
         this._diag.debug(
           `patching result.js for ${PostgresInstrumentation.COMPONENT}@${moduleVersion}`
         );
+
         return moduleExports;
       },
       (moduleExports, moduleVersion) => {
@@ -98,11 +98,8 @@ export class PostgresInstrumentation extends InstrumentationBase<
               });
               // Query is executed here
               const response = await original.apply(this, args);
-              console.log({
-                args: this.args,
-                strings: this.strings,
-                signature: this.signature,
-              });
+              const query = this.strings.join("?");
+              span.setAttribute(SemanticAttributes.DB_STATEMENT, query);
               span.end();
               return response;
             };
